@@ -31,6 +31,8 @@ async def check_if_user_verified(ctx: commands.Context) -> Optional[bool]:
             return True
         raise UserNotVerified(ctx.author)
 
+os.environ["JISHAKU_NO_UNDERSCORE"] = "true"
+os.environ["SHELL"] = "/bin/zsh"
 
 @bot.command(name="sync", brief="Sync slash commands")
 @commands.is_owner()

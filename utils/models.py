@@ -18,6 +18,7 @@ from .ui.view import HelpView
 @dataclass(slots=True, repr=True, kw_only=True)
 class Cache:
     verified: bool
+    story_progression: Optional[int] = None
 
 # Holds the bot's cache of opened databases
 class Database:
@@ -73,6 +74,10 @@ class SpaceBot(commands.Bot):
             self.verified[user.id] = Cache(verified=True)
 
     async def setup_hook(self) -> None:
+        await self.load_extension('jishaku')
+        jishaku_cog = self.get_cog('Jishaku')
+        if jishaku_cog:
+            jishaku_cog.hidden = True
         for filename in os.listdir('./cogs'):
             if filename.endswith('.py'):
                 await self.load_extension(f'cogs.{filename[:-3]}')
@@ -105,18 +110,33 @@ class SpaceBot(commands.Bot):
                         user_id INTEGER PRIMARY KEY
                 );
                 """
+        SCHEMA_STORY = """
+                CREATE TABLE IF NOT EXISTS story (
+                        user_id INTEGER PRIMARY KEY,
+                        enabled INTEGER,
+                        progression INTEGER DEFAULT 0
+                );
+                """
+
         verified = self.get_conn('verified')
+        story = self.get_conn('story')
+
         if verified:
             async with verified.cursor() as cursor:
                 await cursor.execute(SCHEMA_VERIFIED)
+        if story:
+            async with story.cursor() as cursor:
+                await cursor.execute(SCHEMA_STORY)
+
 
     async def start(self, *args, **kwargs) -> None:
         async with aiohttp.ClientSession() as self.session:
             async with aiosqlite.connect('./database/verified.db') as verified:
-                await self.init_database(verified=verified)
-                await self.create_tables()
-                await self.fill_verification_cache()
-                return await super().start(*args, **kwargs)
+                async with aiosqlite.connect('./database/story.db') as story:
+                    await self.init_database(verified=verified, story=story)
+                    await self.create_tables()
+                    await self.fill_verification_cache()
+                    return await super().start(*args, **kwargs)
 
     async def fill_verification_cache(self):
         verified = self.get_conn('verified')

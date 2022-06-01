@@ -7,7 +7,7 @@ from discord.ext import commands
 from utils.scraper import Scraper
 
 
-class FunCog(commands.Cog):
+class FunCog(commands.Cog, name="Fun"):
 
     hidden = False
     def __init__(self, bot: commands.Bot) -> None:
@@ -44,6 +44,15 @@ class FunCog(commands.Cog):
                     return await ctx.send(f"You quit the game. The answer was {key}\nAlternate answers: {', '.join(info['answers'])}")
                 else:
                     await ctx.send(f"Wrong, maybe try again!", ephemeral=True, delete_after=5.0)
+
+    @commands.hybrid_command(name="typeracer", aliases=['tr'], brief="Type a random message sent as fast as possible")
+    async def typeracer(self, ctx: commands.Context) -> None:
+        sentence = "hello world I don't know what to say"
+        message = await self.bot.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel and m.content == sentence)
+        if message.content.lower() == 'quit':
+            return await ctx.send("You quit the game.")
+        else:
+            await ctx.send(f"You typed {message.content} in {message.created_at - ctx.message.created_at} seconds")
                 
     
 
